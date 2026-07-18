@@ -284,7 +284,7 @@ Python **3.12** (developed and tested on 3.12.3).
 
 ## Team
 
-- **Team:** _<natbarpradhannatbar008>_
-- **Members:** _<Natabar Pradhan>_
-- **College:** _<Indian Institute of Technology, Kharagpur>_
+- **Team:** natbarpradhannatbar008
+- **Members:** Natabar Pradhan
+- **College:** Indian Institute of Technology, Kharagpur
 - **Command to run:** `./run.sh ./data ./pickle/model.pkl ./output/predictions.csv`
