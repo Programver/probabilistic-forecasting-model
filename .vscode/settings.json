@@ -1,0 +1,7 @@
+{
+    "// note": "src/ and src/insights/ are added to sys.path at runtime by the entry scripts; these relative extraPaths let the editor resolve those imports too. No machine-specific paths here on purpose.",
+    "python.analysis.extraPaths": [
+        "./src",
+        "./src/insights"
+    ]
+}

@@ -1,0 +1,17 @@
+# Streamlit theme for the AIgnition product app.
+# The dashboard's KPI cards and Plotly charts are designed for a dark base.
+[theme]
+base = "dark"
+primaryColor = "#4285F4"
+backgroundColor = "#0e1117"
+secondaryBackgroundColor = "#1b1f2a"
+textColor = "#f2f5fa"
+font = "sans serif"
+
+[server]
+headless = true
+
+# gatherUsageStats is a [browser] option only — it is not valid under [server],
+# and Streamlit warns about the unknown key on every start if it appears there.
+[browser]
+gatherUsageStats = false

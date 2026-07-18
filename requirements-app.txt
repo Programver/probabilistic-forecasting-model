@@ -1,0 +1,28 @@
+# ---------------------------------------------------------------------------
+# Optional extras for the interactive product + AI-briefing layer.
+# NOT required to score the submission (run.sh uses only requirements.txt).
+#
+#   pip install -r requirements-app.txt      # into the SAME venv as requirements.txt
+#   streamlit run app/streamlit_app.py
+#
+# Streamlit >= 1.45 supports pandas 3, so this shares one environment with the
+# scored pipeline (pandas==3.0.3) — no separate venv needed.
+# ---------------------------------------------------------------------------
+-r requirements.txt
+
+# Product UI
+streamlit==1.59.0
+plotly==6.8.0
+
+# AI briefing — Gemini is the default provider (offline fallback needs no key).
+# Reads GEMINI_API_KEY / OPENAI_API_KEY / ANTHROPIC_API_KEY from a local .env
+# file (see .env.example) via python-dotenv, or from real env vars — either
+# works. No key at all -> fully offline narrative, no error.
+python-dotenv==1.1.0
+# google-genai is the *supported* Gemini SDK. The older google-generativeai is
+# end-of-life; llm.py still accepts it as a fallback if that's what you have,
+# but this is the one we pin and test against.
+google-genai==2.12.0
+# Optional alternative providers (uncomment to use):
+# openai
+# anthropic

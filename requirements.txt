@@ -1,0 +1,16 @@
+# ---------------------------------------------------------------------------
+# AIgnition — scored pipeline dependencies (run.sh: generate_features + predict).
+# Exactly pinned and intentionally MINIMAL for reliable, offline reproduction.
+#
+# The committed model (pickle/model.pkl) contains only our own dataclasses,
+# numpy arrays and plain dicts — no third-party model objects — so it unpickles
+# cleanly under the numpy pinned here. This avoids the most common cause of
+# hackathon scoring failures (version-mismatched unpickling).
+#
+# Python: 3.12 (developed and tested on 3.12.3).
+# ---------------------------------------------------------------------------
+numpy==2.5.0
+pandas==3.0.3
+python-dateutil==2.9.0.post0
+joblib==1.5.3
+holidays==0.99

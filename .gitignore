@@ -1,0 +1,47 @@
+# ---- Environment / build artifacts ----
+.venv/
+venv/
+env/
+__pycache__/
+*.py[cod]
+*.egg-info/
+.ipynb_checkpoints/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# ---- OS noise ----
+.DS_Store
+Thumbs.db
+
+# ---- Local machine / editor state ----
+# Claude Code local config — not a project deliverable, and launch.json points at
+# a machine-specific venv. .vscode/settings.json IS kept: it only adds the two
+# relative sys.path entries the entry scripts add at runtime, so imports resolve
+# in any reviewer's editor.
+.claude/
+.env.bak
+
+# ---- Local secrets (never commit API keys) ----
+.env
+*.local.env
+secrets.toml
+.streamlit/secrets.toml
+
+# ---- Generated pipeline artifacts ----
+# NOTE: pickle/model.pkl IS committed (required by the submission contract).
+# Everything else generated stays out.
+features.pkl
+features.parquet
+features_meta.json
+output/*.csv
+output/*.json
+!output/.gitkeep
+
+# ---- Organizer-provided documents (kept local, not published) ----
+*.pdf
+
+# ---- Root copies of raw datasets (canonical copies live in data/) ----
+/google_ads_campaign_stats.csv
+/meta_ads_campaign_stats.csv
+/bing_campaign_stats.csv
