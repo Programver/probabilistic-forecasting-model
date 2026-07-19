@@ -104,8 +104,9 @@ def reconcile(segment_sims: Dict[str, SegmentSim], campaign_meta: pd.DataFrame,
     # 4a. Campaign-type per channel (the segment itself).
     for key, sim in segment_sims.items():
         plat, ctype = split_segment_key(key)
-        groups.append(GroupForecast("campaign_type", plat, ctype, "all", "all",
-                                    seg_period[key]))
+        dist = {h: {**d, "roas": _roas(d["revenue"], d["spend"])}
+                for h, d in seg_period[key].items()}
+        groups.append(GroupForecast("campaign_type", plat, ctype, "all", "all", dist))
 
     # 4b. Campaign-type blended across channels.
     by_type: Dict[str, List[str]] = {}

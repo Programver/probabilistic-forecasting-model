@@ -147,6 +147,37 @@ def test_dormant_campaign_roas_is_zero():
     assert np.isnan(_roas(np.array([10.0]), np.array([0.0]))).all()
 
 
+def test_dormant_segment_campaign_type_roas_is_zero():
+    """A dormant segment's campaign_type-per-channel group must also report
+    ROAS 0, not NaN.
+
+    `reconcile()`'s aggregate/channel/blended-campaign_type levels combine
+    per-segment sims through `_combine()`, which applies the dormant-ROAS-0
+    fix. The campaign_type-per-channel level (4a) used to pass the segment's
+    raw `aggregate_to_periods()` output straight through instead, bypassing
+    that fix — so a segment with zero spend and zero revenue in the test data
+    (e.g. a short or truncated held-out set) emitted NaN ROAS there even
+    though every other level was null-free.
+    """
+    from hierarchy import reconcile
+    from simulate import SegmentSim
+
+    horizons = [30]
+    dates = pd.date_range("2026-01-01", periods=30)
+    zeros = np.zeros((4, 30))
+    dormant = SegmentSim("google::Dormant Type", "google", "Dormant Type",
+                          dates, zeros, zeros)
+    groups = reconcile({"google::Dormant Type": dormant}, campaign_meta=None,
+                        cfg=type("Cfg", (), {"horizons": horizons})())
+
+    ctype_groups = [g for g in groups if g.level == "campaign_type" and g.channel == "google"]
+    assert ctype_groups, "expected a campaign_type-per-channel group"
+    for g in ctype_groups:
+        roas = g.dist[30]["roas"]
+        assert not np.isnan(roas).any(), "dormant campaign_type-per-channel ROAS must be 0, not NaN"
+        assert np.all(roas == 0.0)
+
+
 def test_cli_tools_work_without_app_extras():
     """`python src/briefing.py` must run in a **requirements.txt-only** environment.
 
