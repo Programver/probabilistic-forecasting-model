@@ -14,3 +14,7 @@ pandas==3.0.3
 python-dateutil==2.9.0.post0
 joblib==1.5.3
 holidays==0.99
+streamlit==1.59.0
+plotly==6.8.0
+python-dotenv==1.1.0
+google-genai==2.12.0
