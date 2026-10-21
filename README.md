@@ -1,290 +1,495 @@
-# AIgnition 3.0 — Probabilistic Revenue Forecasting for E-commerce Marketing
+# AIgnition 3.0 — A probabilistic method of forecasting revenue for e-commerce marketing
 
-An AI-assisted forecasting utility for digital marketing agencies. It ingests
-fragmented Google / Meta / Microsoft (Bing) Ads data, produces **probabilistic**
-forecasts of **ecommerce revenue and blended ROAS** across a coherent hierarchy
-(aggregate → channel → campaign-type → campaign) for **30 / 60 / 90-day** planning
-windows, simulates the revenue/ROAS impact of **future media budgets** under
-diminishing returns, and generates **AI-assisted causal briefings**.
+An AI-assisted forecasting system for digital marketing agencies that combines revenue forecasting, budget simulation, and business insights in a single workflow.
 
-> Built for NetElixir's AIgnition 3.0. The scored pipeline runs fully **offline**,
-> **deterministically**, from a **single `run.sh`**, against a **pre-trained,
-> committed model** — exactly as the submission contract requires.
+## 1. Project Overview
 
-**Two halves, both part of the product:** the forecasting **pipeline** (`run.sh` →
-`predictions.csv`) and the **interactive dashboard** (`app/streamlit_app.py` — forecast,
-budget simulator, AI insights, data). **[How to run it](#how-to-run-it)** covers the
-complete setup for both, including the optional 30-second API-key step that enables
-LLM-polished AI Insights. No key is *required* anywhere — every tab still works
-without one — but the key shows the AI layer at full strength.
+A forecasting tool for digital marketing agencies that uses AI. It takes in the scattered Google and Meta and Microsoft (Bing) Ads data and generates probabilistic forecasts of e-commerce revenue and blended ROAS across a consistent hierarchy (from aggregate to channel to campaign type to campaign) for 30-day, 60-day and 90-day planning periods.
 
----
+The system, by taking into account diminishing returns, simulates the effect that different future media budgets will have on revenue and ROAS and produces causal briefings with the help of AI.
 
-## Quickstart (the exact scored path)
+The project has two parts: the forecasting pipeline and the interactive dashboard. The forecasting pipeline produces the predictions and the dashboard gives access to the forecasts, the budget simulation, the AI insights and the data.
 
-> This section is the **pipeline only** — the compliance path. For the dashboard and
-> the AI Insights tab, see **[How to run it](#how-to-run-it)** below.
+### Key Features
 
-```bash
-# 1. Fresh environment (Python 3.12)
-python3 -m venv .venv && source .venv/bin/activate
-pip install -r requirements.txt
+- **Probabilistic forecasting:** Generates revenue, advertising spend, and ROAS forecasts for 30-, 60-, and 90-day planning periods, along with uncertainty estimates.
+- **Hierarchical forecasting:** Organises predictions across aggregate, channel, campaign-type, and campaign levels.
+- **Budget simulation:** Evaluates alternative advertising budgets while accounting for diminishing returns.
+- **AI-assisted insights:** Converts calculated model outputs into readable business briefings using an optional large language model (LLM).
+- **Offline execution:** Runs the core forecasting pipeline without internet access or external API calls.
+- **Reproducibility:** Uses a committed pre-trained model and seeded randomness to produce consistent results.
 
-# 2. One command: features -> model -> predictions
-./run.sh ./data ./pickle/model.pkl ./output/predictions.csv
-#   (defaults are identical, so `./run.sh` alone also works)
+## 2. System Architecture
 
-# 3. Read the forecast
-open output/predictions.csv
+The project separates data processing, forecasting, and business-facing insights into independent components.
+
+### Architecture Diagram
+
+```mermaid
+flowchart TD
+    A[Google Ads CSV]
+    B[Meta Ads CSV]
+    C[Microsoft Bing Ads CSV]
+
+    A --> D[Data Ingestion]
+    B --> D
+    C --> D
+
+    D --> E[Schema Mapping and Standardisation]
+    E --> F[Preprocessing and Feature Engineering]
+    F --> G[Seasonality and Trend Features]
+    G --> H[Pre-trained Forecasting Model]
+
+    H --> I[Monte Carlo Simulation]
+    I --> J[Uncertainty Calibration]
+    J --> K[Hierarchical Reconciliation]
+    K --> L[Predictions CSV]
+
+    K --> M[Forecast Dashboard]
+    K --> N[Budget Simulator]
+    K --> O[Driver Attribution]
+    O --> P[Optional LLM Briefing]
+    O --> Q[Offline Narrative]
+
+    P --> R[AI Insights Dashboard]
+    Q --> R
+    L --> S[Data and Predictions Tab]
 ```
 
-`run.sh` (a) generates features from whatever CSVs are in `DATA_DIR`, then
-(b) loads the committed `pickle/model.pkl` and writes `output/predictions.csv`.
-No network, no prompts, no retraining, seeded for reproducibility.
+### Main Components
 
-**The trained model is already committed** (`pickle/model.pkl`). You do **not**
-need to train to score. To rebuild it from data (optional, dev-time only):
+| Component | Responsibility |
+|---|---|
+| Data ingestion | Reads advertising CSV files and maps platform-specific columns into a common schema. |
+| Taxonomy | Classifies campaigns by advertising channel, campaign type, and brand intent. |
+| Preprocessing | Handles date alignment, missing observations, segment panels, and campaign revenue shares. |
+| Feature engineering | Builds calendar, seasonality, trend, and other model features. |
+| Forecasting model | Applies the committed model to generate future estimates. |
+| Uncertainty estimation | Simulates possible future outcomes and calibrates prediction intervals. |
+| Hierarchy management | Ensures consistency between aggregate, channel, campaign-type, and campaign forecasts. |
+| Budget simulation | Estimates how different spending scenarios may affect revenue and ROAS. |
+| Insight engine | Calculates drivers, identifies ROAS concerns, and prepares budget recommendations. |
+| Interactive dashboard | Presents forecasts, simulations, data, and insights through a Streamlit interface. |
+
+## 3. Methodology
+
+We model each channel × campaign-type segment with a transparent, glass-box structural decomposition:
+
+`revenue ≈ level · damped-trend · seasonality · spend-response · noise`
+
+The components are estimated using partial pooling so that segments with a limited amount of historical data can borrow a stable seasonal pattern from the population.
+
+Spend generates revenue by means of a constant-elasticity curve (with an empirically observed value of β at approximately 0.6 to 0.8 and less than 1, which shows diminishing returns), and this curve is used in budget simulations.
+
+We determine the level of uncertainty by means of Monte Carlo simulations of daily path movements, using block-bootstrapped, autocorrelated noise as well as shocks to level, trend and macroeconomic variables. The paths are then combined to give totals for 30-, 60- and 90-day periods. Finally, we adjust the widths of the intervals using split conformal methodology so that the actual coverage can be compared with the stated (nominal) level.
+
+The hierarchy appears coherent because the same simulated outcomes are summed over the different segments.
+
+### 3.1 Forecasting Process
+
+The forecasting process consists of the following stages:
+
+1. **Data ingestion:** Reads the available advertising platform data and maps different column names into a standard format.
+2. **Preprocessing:** Aligns dates, prepares campaign and segment-level panels, and calculates historical revenue shares.
+3. **Feature generation:** Builds seasonal profiles, calendar features, and trend-related inputs.
+4. **Model inference:** Loads the committed pre-trained model and applies it to the prepared data.
+5. **Simulation:** Generates multiple possible future daily revenue and spending paths.
+6. **Uncertainty calibration:** Adjusts the prediction intervals using split-conformal calibration.
+7. **Hierarchical aggregation:** Produces consistent forecasts at all reporting levels.
+8. **Output generation:** Saves the resulting predictions to a CSV file for further analysis and dashboard use.
+
+### 3.2 Probabilistic Forecasting
+
+Rather than returning only one forecast, the system produces multiple quantiles to describe the distribution of possible outcomes.
+
+The output includes:
+
+- Mean and standard deviation.
+- 5th percentile (`p05`).
+- Intermediate quantiles.
+- 95th percentile (`p95`).
+
+The quantiles provide a way to examine lower and upper forecast scenarios. The interval widths are calibrated using historical forecast errors, although actual coverage may differ from the nominal level under changing market conditions.
+
+### 3.3 Hierarchical Forecasting
+
+The forecasting hierarchy follows this structure:
+
+```text
+Aggregate
+   |
+   +-- Channel
+         |
+         +-- Campaign Type
+               |
+               +-- Campaign
+```
+
+The hierarchy allows users to move between overall business performance and individual campaign results.
+
+The system uses the same simulated outcomes to construct forecasts across segments, helping ensure that the totals remain consistent between reporting levels. Campaign-level results are allocated using historical revenue shares.
+
+### 3.4 Budget Response Model
+
+The budget simulator uses a constant-elasticity spending-response relationship.
+
+A simplified representation is:
+
+\[
+R(S) = A S^\beta
+\]
+
+where:
+
+- \(R(S)\) represents expected revenue at spending level \(S\).
+- \(A\) represents a scaling factor.
+- \(S\) represents advertising spend.
+- \(\beta\) represents the spending elasticity.
+
+When \(0 < \beta < 1\), revenue increases with spending, but at a decreasing rate.
+
+This relationship allows the system to compare alternative budget scenarios and estimate their potential effects on revenue and return on advertising spend. These estimates depend on the model's assumptions and historical data.
+
+## 4. AI Integration
+
+The insight layer begins by calculating grounded and deterministic driver attributions, breaking down the amount of the change that can be attributed to seasonality, trend, spending, and campaign mix; it also produces a ROAS watch list and detects marginal-ROAS budget opportunities by using the model's internal mechanisms rather than a language model.
+
+A large language model may then refine these results into an executive summary, being strictly limited to the given figures.
+
+If no API key is available, the system uses a completely offline template narrative so that the product can still produce useful insights.
+
+The LLM is not used in the scored offline pipeline since the pipeline's feature-generation and prediction stages involve no network calls and do not import the LLM layer, no matter whether an API key is configured.
+
+The detection of the provider takes place in the following order: Gemini, then OpenAI, and then Anthropic; and if a necessary key or SDK is missing, or if there is no network access, or if a request times out, or if the response is invalid, the application uses the offline narrative.
+
+### 4.1 AI Insight Workflow
+
+```mermaid
+flowchart TD
+    A[Forecast Model Outputs]
+    A --> B[Driver Attribution]
+    B --> C[Seasonality, Trend, Spend and Mix]
+    B --> D[ROAS Watch List]
+    B --> E[Marginal ROAS Opportunities]
+
+    C --> F[Calculated Insight Summary]
+    D --> F
+    E --> F
+
+    F --> G{LLM Available?}
+    G -->|Yes| H[LLM-Polished Briefing]
+    G -->|No| I[Offline Template Narrative]
+
+    H --> J[AI Insights Dashboard]
+    I --> J
+```
+
+The numerical analysis is performed before the optional language-model step. This keeps the core calculations independent of the LLM and allows the insight layer to continue functioning when external services are unavailable.
+
+### 4.2 Supported LLM Providers
+
+The application automatically detects an available provider in the following order:
+
+1. Gemini.
+2. OpenAI.
+3. Anthropic.
+
+The selected provider requires a valid API key and its corresponding installed SDK.
+
+The recommended configuration uses Gemini. OpenAI and Anthropic can also be enabled through their respective SDK dependencies.
+
+API keys are stored in a local `.env` file, which is excluded from version control. The example configuration file contains placeholders rather than real credentials.
+
+## 5. Reproducibility and Compliance
+
+- There is a single entry point: the script `run.sh` takes as input the data directory, the model path, and the output path, with reasonable default values.
+- **Offline execution:** No network calls are made either during feature generation or when carrying out a prediction. This has been confirmed by blocking the application and the LLM dependencies and then rerunning the pipeline.
+- **Deterministic execution:** The randomness is seeded using the random seed that has been configured and with PYTHONHASHSEED set to 0; it has been verified that repeated runs result in outputs that are identical at the byte level.
+- **No retraining takes place during evaluation:** The pre-trained model that has been committed to is used, and the closed-form features are calculated directly from the input data.
+- **Robustness with regard to schema and size:** Instead of relying on filenames, the advertising platforms are identified using column fingerprints. The pipeline is capable of dealing with different advertisers, various date ranges, and differing numbers of rows.
+- **Regarding edge cases:** The pipeline has been tested using an unknown campaign type, a 12-day history, data with zero revenue, and data with zero spending. In all these situations it produces valid output that contains no null values.
+- **Null-free output:** Checks are carried out on the generated predictions to make sure that the output includes no missing values.
+- **Pinned dependencies:** The dependencies are pinned, and in order to reduce the likelihood of version-mismatch problems when the model is loaded, the model pickle uses a state that contains only NumPy.
+
+The project was developed and tested with Python 3.12.3.
+
+### 5.1 Automated Testing
+
+The project includes an automated test suite covering important parts of the forecasting workflow.
+
+```bash
+python tests/test_pipeline.py
+```
+
+The test suite includes 13 tests and can also be run using pytest:
+
+```bash
+pytest -q
+```
+
+The tests cover:
+
+- Data ingestion and schema mapping.
+- Meta conversion-to-revenue handling.
+- Campaign taxonomy.
+- Data preprocessing.
+- End-to-end forecasting.
+- Output schema validation.
+- Quantile ordering.
+- Missing-value checks.
+- Hierarchical consistency.
+- Handling of individual advertising platforms.
+- Loading the pre-trained model.
+
+## 6. What the System Produces
+
+The forecasting pipeline generates `output/predictions.csv`.
+
+The file uses a long-format structure, with one row for each combination of forecast horizon, hierarchy node, and metric.
+
+### 6.1 Output Fields
+
+| Field | Description |
+|---|---|
+| `forecast_origin` | Last observed date used as the forecast origin. |
+| `horizon_days` | Forecast horizon: 30, 60, or 90 days. |
+| `period_start` | Start of the forecast period. |
+| `period_end` | End of the forecast period. |
+| `level` | Hierarchy level: aggregate, channel, campaign type, or campaign. |
+| `channel` | Advertising channel or blended aggregate. |
+| `campaign_type` | Campaign classification. |
+| `campaign_id` | Campaign identifier. |
+| `campaign_name` | Campaign name. |
+| `metric` | Forecast metric: revenue, spend, or ROAS. |
+| `currency` | Currency or ratio unit. |
+| `mean` | Mean forecast estimate. |
+| `std` | Standard deviation of the forecast distribution. |
+| `p05`–`p95` | Forecast quantiles describing uncertainty. |
+
+For the bundled sample dataset, the expected output contains 1,404 rows across the four hierarchy levels, with no missing values.
+
+Dormant campaigns with zero forecast spend and zero forecast revenue are assigned a ROAS of zero. A case involving zero spend and positive revenue remains undefined rather than being assigned an arbitrary finite value.
+
+Campaign-level output is capped at the top 500 campaigns per segment based on recent revenue. If this limit is reached, the remaining campaigns are still accounted for at the campaign-type level and above.
+
+The output column specification is centralised in `src/config.py`, allowing the output format to be adjusted without modifying the forecasting engine.
+
+## 7. Interactive Dashboard
+
+The project includes a four-tab dashboard built with Streamlit.
+
+### Dashboard Structure
+
+```text
+AIgnition Dashboard
+|
++-- Forecast
+|     +-- Revenue forecasts
+|     +-- Spend forecasts
+|     +-- ROAS estimates
+|     +-- Forecast horizons
+|
++-- Budget Simulator
+|     +-- Budget scenarios
+|     +-- Revenue response
+|     +-- ROAS response
+|
++-- AI Insights
+|     +-- Driver attribution
+|     +-- ROAS watch list
+|     +-- Budget opportunities
+|     +-- Executive briefing
+|
++-- Data & Predictions
+      +-- Input data
+      +-- Forecast output
+      +-- Prediction details
+```
+
+### 7.1 Forecast Tab
+
+Displays the generated forecasts across the supported horizons and hierarchy levels, allowing users to examine projected revenue, spend, and ROAS.
+
+### 7.2 Budget Simulator Tab
+
+Allows users to explore alternative media budgets and examine the model's estimated revenue and ROAS response under diminishing returns.
+
+### 7.3 AI Insights Tab
+
+Presents the calculated driver attribution, ROAS watch list, and budget opportunities in a business-oriented briefing. An optional LLM can polish the briefing, while the offline narrative remains available without an API key.
+
+### 7.4 Data & Predictions Tab
+
+Provides access to the available data and forecast output so users can inspect the underlying results.
+
+## 8. Repository Structure
+
+```text
+.
+├── run.sh
+├── run_project.sh
+├── requirements.txt
+├── requirements-app.txt
+├── .env.example
+├── .streamlit/
+│   └── config.toml
+├── data/
+│   ├── google_ads_campaign_stats.csv
+│   ├── meta_ads_campaign_stats.csv
+│   └── bing_campaign_stats.csv
+├── pickle/
+│   └── model.pkl
+├── output/
+│   └── predictions.csv
+├── src/
+│   ├── config.py
+│   ├── ingest.py
+│   ├── taxonomy.py
+│   ├── preprocess.py
+│   ├── calendar_features.py
+│   ├── seasonality.py
+│   ├── decompose.py
+│   ├── response.py
+│   ├── uncertainty.py
+│   ├── simulate.py
+│   ├── hierarchy.py
+│   ├── model.py
+│   ├── backtest.py
+│   ├── forecast.py
+│   ├── budget.py
+│   ├── io_utils.py
+│   ├── logging_utils.py
+│   ├── insights/
+│   ├── generate_features.py
+│   ├── predict.py
+│   ├── train.py
+│   └── briefing.py
+├── app/
+│   └── streamlit_app.py
+├── docs/
+└── tests/
+    └── test_pipeline.py
+```
+
+### Important Files
+
+- `run.sh`: Main entry point for the scored forecasting pipeline.
+- `run_project.sh`: Optional wrapper for running the pipeline or dashboard.
+- `src/ingest.py`: Reads and standardises advertising platform data.
+- `src/forecast.py`: Coordinates the forecasting process.
+- `src/uncertainty.py`: Handles uncertainty estimation and interval calibration.
+- `src/hierarchy.py`: Maintains consistency across forecast levels.
+- `src/budget.py`: Implements budget scenario simulations.
+- `src/insights/`: Contains the insight-generation and optional LLM components.
+- `src/train.py`: Rebuilds the model during development when required.
+- `app/streamlit_app.py`: Runs the interactive dashboard.
+- `tests/test_pipeline.py`: Contains the pipeline validation tests.
+- `pickle/model.pkl`: Stores the committed pre-trained model.
+
+## 9. How to Run the Project
+
+### 9.1 Requirements
+
+- Python 3.12.
+- A compatible Python environment.
+- The dependencies listed in the relevant requirements file.
+- The supplied advertising data and pre-trained model.
+
+### 9.2 Run the Forecasting Pipeline
+
+Create and activate a virtual environment, then install the core dependencies.
+
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+
+pip install -r requirements.txt
+```
+
+Run the forecasting pipeline:
+
+```bash
+./run.sh ./data ./pickle/model.pkl ./output/predictions.csv
+```
+
+The default paths are already configured, so the pipeline can also be started with:
+
+```bash
+./run.sh
+```
+
+Once execution is complete, the predictions are available at:
+
+```text
+output/predictions.csv
+```
+
+The scored pipeline loads the committed model rather than retraining it. Model retraining is an optional development step:
 
 ```bash
 python src/train.py --data-dir ./data --out ./pickle/model.pkl
 ```
 
-> `run.sh` is **the** entry point required by the submission contract.
-> `run_project.sh` is an optional convenience wrapper that simply calls `run.sh` or
-> Streamlit for you (`./run_project.sh pipeline` | `./run_project.sh app`) — handy,
-> but it adds nothing you cannot do with the two commands directly.
+### 9.3 Run the Interactive Dashboard
 
-### Verify the whole thing
+Install the application dependencies:
 
 ```bash
-python tests/test_pipeline.py     # 13 tests, no pytest needed (pytest -q also works)
+pip install -r requirements-app.txt
 ```
 
-Covers ingestion, the Meta `conversion`=revenue invariant, taxonomy, preprocessing,
-the end-to-end forecast, the **exact output schema**, quantile monotonicity, null-free
-output, hierarchy coherence, single-platform robustness, and clean model loading.
-
----
-
-## How to run it
-
-The submission has two runnable halves, and **both are part of the product**:
-
-- **The scored pipeline** — `run.sh` → `output/predictions.csv` (the forecasting engine).
-- **The interactive product** — `app/streamlit_app.py`: a 4-tab dashboard
-  (📊 Forecast · 🎛️ Budget Simulator · 🧠 AI Insights · 📄 Data & Predictions).
-
-The recommended setup below runs **everything**, including LLM-polished AI Insights.
-An API key is **optional** — every tab, the CLI and the pipeline are fully functional
-without one — but adding a key is a 30-second step and shows the AI layer at full
-strength, so it is worth doing.
-
-### Recommended — the complete product (one venv, everything working)
+Start the Streamlit application:
 
 ```bash
-# 1. Environment (Python 3.12) — one venv covers the pipeline AND the app
-python3 -m venv .venv && source .venv/bin/activate
-pip install -r requirements-app.txt        # includes requirements.txt via -r
-
-# 2. Optional but recommended: enable LLM-polished AI Insights (~30s)
-cp .env.example .env
-#    then edit .env and paste ONE key, e.g.:  GEMINI_API_KEY=your-key-here
-#    Gemini (default, SDK already installed): https://aistudio.google.com/apikey
-#    OpenAI:    https://platform.openai.com/api-keys     (uncomment `openai` in requirements-app.txt)
-#    Anthropic: https://console.anthropic.com/settings/keys (uncomment `anthropic`)
-
-# 3. The forecasting pipeline -> predictions.csv
-./run.sh ./data ./pickle/model.pkl ./output/predictions.csv
-
-# 4. The dashboard (reads .env automatically — no `export` needed)
 streamlit run app/streamlit_app.py
 ```
 
-In the app: the sidebar states which LLM provider is live (or that it is running
-offline). On **🧠 AI Insights**, switch on *"Use LLM to polish the briefing"* and
-click **Generate briefing**.
-
-### Without any API key — everything still runs
-
-Skip step 2 entirely. Nothing breaks and nothing is hidden:
-
-- All four tabs render, with the full forecast, budget simulator and response curves.
-- **🧠 AI Insights** still produces a complete briefing — the driver attribution,
-  ROAS watch-list and budget recommendations are computed **deterministically from
-  the model internals, not from an LLM**, so the analysis is identical either way.
-  Only the *prose* is templated instead of LLM-written, and the sidebar says so.
-- `run.sh` is unaffected — it never imports the LLM layer at all, with or without a key.
-
-This is a designed fallback, not a degraded mode: the LLM is deliberately confined to
-rewriting figures it is handed, so the insight itself never depends on a network call.
-If a key is missing, invalid, rate-limited, or offline, the app falls back silently
-and never crashes.
-
-### Scored pipeline on its own (minimal deps)
-
-If you only want `predictions.csv`, the minimal path needs nothing but
-`requirements.txt` — no key, no `.env`, no internet:
+The dashboard can operate without an API key. To enable LLM-polished briefings, copy the example environment file:
 
 ```bash
-python3 -m venv .venv && source .venv/bin/activate
-pip install -r requirements.txt
+cp .env.example .env
+```
+
+Add a valid provider key to `.env`, for example:
+
+```text
+GEMINI_API_KEY=your-key-here
+```
+
+The application detects the configured provider and uses the offline narrative if the LLM is unavailable.
+
+**Security note:** Never commit a real API key or the `.env` file to the repository.
+
+### 9.4 Run the Briefing from the Command Line
+
+The insight briefing can also be generated without opening Streamlit:
+
+```bash
+python src/briefing.py
+```
+
+To force the offline narrative:
+
+```bash
+python src/briefing.py --no-llm
+```
+
+## 10. Overall Objective
+
+The aim is to develop a forecasting system for digital marketing agencies which incorporates probabilistic revenue forecasts, hierarchical reporting, budget simulation, and AI-supported business insights. This system is intended to aid with planning over 30-, 60-, and 90-day periods while at the same time ensuring reproducibility and fulfilling the offline execution needs of the AIgnition 3.0 submission.
+
+## 11. Team
+
+- **Team:** `natbarpradhannatbar008`
+- **Member:** Natabar Pradhan
+- **College:** Indian Institute of Technology, Kharagpur
+
+## 12. Submission Command
+
+The main command for running the scored pipeline is:
+
+```bash
 ./run.sh ./data ./pickle/model.pkl ./output/predictions.csv
 ```
 
-### CLI briefing (no Streamlit needed)
-
-```bash
-python src/briefing.py            # LLM-polished if a key is present, offline if not
-python src/briefing.py --no-llm   # force the offline narrative
-```
-
-> `.env` is git-ignored — never commit real keys. Only `.env.example` ships.
-
----
-
-## What it produces (`output/predictions.csv`)
-
-A tidy **long** table — one row per *horizon × hierarchy node × metric* — encoding
-every required deliverable with a full probabilistic fan:
-
-| column | meaning |
-|---|---|
-| `forecast_origin` | last observed date used as the origin |
-| `horizon_days` | 30, 60 or 90 (aggregate planning window) |
-| `period_start`, `period_end` | forecast window bounds |
-| `level` | `aggregate` \| `channel` \| `campaign_type` \| `campaign` |
-| `channel` | `blended` \| `google` \| `meta` \| `bing` |
-| `campaign_type`, `campaign_id`, `campaign_name` | hierarchy node identifiers |
-| `metric` | `revenue` \| `spend` \| `roas` |
-| `currency` | `USD` (money) / `ratio` (ROAS) |
-| `mean`, `std` | point + dispersion |
-| `p05 … p95` | quantile fan (probabilistic interval) |
-
-On the bundled sample this is **1,404 rows across all four levels, with no nulls**.
-A *dormant* campaign — zero forecast spend **and** zero forecast revenue, which is
-~45% of campaigns in this dataset — reports the conventional **ROAS of 0** (the same
-way the ad platforms report it) rather than an undefined `0/0`. The one case left as
-`NaN` is genuinely undefined: zero spend against *positive* revenue (infinite ROAS),
-which we decline to invent a number for.
-
-Per-campaign detail is capped at the top **500 campaigns per segment** by recent
-revenue (`config.MAX_CAMPAIGNS_PER_SEGMENT`) so a very large advertiser cannot
-exhaust memory during disaggregation. The largest segment in this dataset has 58
-campaigns, so the cap never engages here; if it ever does it logs a warning, and the
-dropped tail remains fully accounted for at the `campaign_type` level and above —
-totals stay exact.
-
-The exact column set lives in one place (`src/config.py::PREDICTION_COLUMNS`) so it
-can be conformed to any officially-announced schema in minutes without touching the
-forecasting engine.
-
----
-
-## Repository structure
-
-```
-.
-├── run.sh                     # single entry point (required, scored)
-├── run_project.sh             # optional human convenience wrapper (pipeline | app)
-├── requirements.txt           # scored-path deps, pinned (required)
-├── requirements-app.txt       # optional app + LLM extras
-├── .env.example               # template for optional LLM API keys (copy -> .env; .env is git-ignored)
-├── .streamlit/config.toml     # dark theme for the product app
-├── data/                      # sample CSVs — overwritten by the harness at test time
-│   ├── google_ads_campaign_stats.csv
-│   ├── meta_ads_campaign_stats.csv
-│   └── bing_campaign_stats.csv
-├── pickle/
-│   └── model.pkl              # committed, pre-trained model (required)
-├── output/                    # predictions.csv is written here
-├── src/
-│   ├── config.py              # schema maps, taxonomy, horizons, quantiles, OUTPUT contract
-│   ├── ingest.py              # schema-fingerprint adapters -> canonical panel
-│   ├── taxonomy.py            # campaign -> (channel, type, brand intent)
-│   ├── preprocess.py          # ragged-edge trim, dense segment/campaign panels, shares
-│   ├── calendar_features.py   # offline marketing-event calendar (BFCM, holidays)
-│   ├── seasonality.py         # pooled ISO-week + day-of-week seasonal profiles
-│   ├── decompose.py           # level, damped trend, residual bootstrap blocks
-│   ├── response.py            # constant-elasticity spend->revenue (diminishing returns)
-│   ├── uncertainty.py         # block bootstrap + split-conformal calibration
-│   ├── simulate.py            # Monte-Carlo coupled revenue/spend daily paths
-│   ├── hierarchy.py           # coherent reconciliation + campaign disaggregation
-│   ├── model.py               # ForecastModel artifact (frozen priors) + build/apply
-│   ├── backtest.py            # rolling-origin calibration + accuracy metrics
-│   ├── forecast.py            # orchestration: prepared + model -> forecast
-│   ├── budget.py              # what-if budget simulation + response curves
-│   ├── io_utils.py            # predictions.csv writer (the output contract)
-│   ├── logging_utils.py       # shared logger setup
-│   ├── insights/              # AI layer: drivers -> narrative -> optional LLM
-│   │                          #   drivers.py -> narrative.py -> llm.py, via engine.py
-│   ├── generate_features.py   # run.sh step (a)
-│   ├── predict.py             # run.sh step (b)
-│   ├── train.py               # dev-time model builder (not run at eval)
-│   └── briefing.py            # CLI AI briefing (demo)
-├── app/streamlit_app.py       # interactive product (4 tabs)
-├── docs/                      # methodology, architecture, demo, report, checklist
-└── tests/test_pipeline.py     # 13 smoke + contract tests
-```
-
----
-
-## Methodology in one paragraph
-
-We model each **channel × campaign-type segment** with a transparent, glass-box
-structural decomposition — `revenue ≈ level · damped-trend · seasonality ·
-spend-response · noise` — estimated with partial pooling so segments with only two
-observed holiday cycles borrow a stabilised seasonal shape from the population.
-Spend drives revenue through a **constant-elasticity** curve (empirically β ≈
-0.6–0.8 < 1, i.e. diminishing returns), which powers budget simulation. We quantify
-uncertainty by **Monte-Carlo simulating daily paths** (block-bootstrapped,
-autocorrelated noise + level/trend/macro shocks), summing them to 30/60/90-day
-period totals, and **calibrating interval widths with split conformal** so realised
-coverage matches the nominal level. Summing the same simulated world across segments
-makes the hierarchy **coherent by construction**. See
-[`docs/methodology.md`](docs/methodology.md) and
-[`docs/architecture.md`](docs/architecture.md) for the full treatment, and
-[`docs/demo_workflow.md`](docs/demo_workflow.md) for the walkthrough.
-
-## AI integration
-
-The insight layer first computes **grounded, deterministic driver attribution**
-(how much of the change is seasonality vs. trend vs. spend & mix), a ROAS watch-list,
-and marginal-ROAS budget opportunities — all from the model internals, not from a
-language model. An **optional LLM** then *polishes* this into an executive briefing,
-strictly constrained to the supplied figures. With no API key it falls back to a
-fully-offline template narrative, so the product always ships useful insights. The
-LLM is **never** invoked on the scored offline pipeline — `run.sh` /
-`generate_features.py` / `predict.py` make no network calls and do not even import
-the LLM layer, with or without a key set.
-
-Provider auto-detection order is **Gemini → OpenAI → Anthropic**: whichever key is
-present (and whose SDK is installed) wins. Any failure — missing key, missing SDK,
-no network, timeout, bad response — falls back to the offline narrative and never
-raises. For Gemini either SDK works: the supported **`google-genai`** (pinned and
-tested) or the EOL `google-generativeai` (accepted as a fallback).
-
-## Reproducibility & compliance
-
-- Single `run.sh`; accepts `DATA_DIR MODEL_PATH OUTPUT_PATH` with sensible defaults.
-- **Offline** at run time — no network calls anywhere in `generate_features`/`predict`,
-  verified by import-blocking every app/LLM dependency and re-running the pipeline.
-- **Deterministic** — all randomness seeded (`config.RANDOM_SEED`, `PYTHONHASHSEED=0`);
-  verified byte-identical across repeat runs.
-- **No retraining** — the committed model is applied; only closed-form features are
-  computed from `data/`.
-- **Schema/size-robust** — platforms are detected by column fingerprint (not
-  filename); the pipeline handles a different advertiser, date range, or row count.
-  Exercised against an unseen campaign type, a 12-day history, all-zero-revenue and
-  all-zero-spend data — all produce a valid, null-free output.
-- **Null-free output** — see `test_no_nulls_in_scored_output`.
-- **Pinned deps**; the model pickle is dependency-light (numpy-only state) to avoid
-  version-mismatched unpickling.
-
-Python **3.12** (developed and tested on 3.12.3).
-
-## Team
-
-- **Team:** natbarpradhannatbar008
-- **Members:** Natabar Pradhan
-- **College:** Indian Institute of Technology, Kharagpur
-- **Command to run:** `./run.sh ./data ./pickle/model.pkl ./output/predictions.csv`
+The forecasting pipeline is designed to run offline using the committed pre-trained model, while the interactive dashboard provides an additional interface for exploring forecasts, budget scenarios, and AI-assisted insights.
